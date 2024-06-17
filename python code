@@ -1,0 +1,90 @@
+# Budget_App_project
+
+class Category():
+    def __init__(self, category):
+        # Initialize the category with a name and an empty ledger
+        self.category = category
+        self.ledger = []
+
+    def deposit(self, amount, description=""):
+        # Add a deposit entry to the ledger with an optional description
+        self.ledger.append({"amount": amount, "description": description})
+
+    def withdraw(self, amount, description=""):
+        # Check if there are sufficient funds for the withdrawal
+        balance = self.get_balance()
+        if balance >= amount:
+            # If sufficient, add a withdrawal entry to the ledger and return True
+            self.ledger.append({"amount": -amount, "description": description})
+            return True
+        else:
+            # If not sufficient, return False
+            return False
+
+    def get_balance(self):
+        # Calculate the current balance by summing up all the amounts in the ledger
+        balance = sum(item['amount'] for item in self.ledger)
+        return balance
+
+    def check_funds(self, amount):
+        # Check if the current balance is greater than or equal to the given amount
+        if self.get_balance() >= amount:
+            return True
+        else:
+            return False
+
+    def transfer(self, amount, destination_category):
+        # Transfer funds to another category if there are sufficient funds
+        if self.withdraw(amount, description=f"Transfer to {destination_category.category}"):
+            # Withdraw from current category and deposit into destination category
+            destination_category.deposit(amount, description=f"Transfer from {self.category}")
+            return True
+        else:
+            # If insufficient funds, return False
+            return False
+
+    def __str__(self):
+        # Format the category ledger into a string for printing
+        budget = f"{self.category:*^30}\n"
+        items = ""
+        for item in self.ledger:
+            amount = f"{item['amount']:.2f}"
+            description = f"{item['description'][:23]:23}"
+            items += f"{description}{amount:>7}\n"
+        total = f"Total: {self.get_balance():.2f}"
+        return budget + items + total
+
+def create_spend_chart(categories):
+    # Create a chart showing the percentage spent by each category
+    total_spent = 0
+    spending = []
+
+    for category in categories:
+        # Calculate the total spent in each category
+        category_spent = sum(-item['amount'] for item in category.ledger if item['amount'] < 0)
+        spending.append((category.category, category_spent))
+        total_spent += category_spent
+
+    # Calculate the spending percentage for each category
+    percentages = [(name, int((spent / total_spent) * 100)) for name, spent in spending]
+
+    # Build the chart string
+    chart = "Percentage spent by category\n"
+    for i in range(100, -1, -10):
+        chart += f"{i:>3}| "
+        for _, percent in percentages:
+            chart += "o  " if percent >= i else "   "
+        chart += "\n"
+
+    # Add the horizontal line to the chart
+    chart += "    " + "-" * (3 * len(categories) + 1) + "\n"
+
+    # Add the category names to the chart
+    max_len = max(len(name) for name, _ in percentages)
+    for i in range(max_len):
+        chart += "     "
+        for name, _ in percentages:
+            chart += name[i] + "  " if i < len(name) else "   "
+        chart += "\n"
+
+    return chart.rstrip("\n")
